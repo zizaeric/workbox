@@ -7,18 +7,17 @@
 */
 
 import {expect} from 'chai';
-import {reset as iDBReset} from 'shelving-mock-indexeddb';
 import sinon from 'sinon';
+import {Queue} from 'workbox-background-sync/Queue.mjs';
+import {QueueStore} from 'workbox-background-sync/lib/QueueStore.mjs';
+import {DBWrapper} from 'workbox-core/_private/DBWrapper.mjs';
 import expectError from '../../../infra/testing/expectError';
-import {Queue} from '../../../packages/workbox-background-sync/Queue.mjs';
-import {QueueStore} from '../../../packages/workbox-background-sync/lib/QueueStore.mjs';
-import {DBWrapper} from '../../../packages/workbox-core/_private/DBWrapper.mjs';
 
 
 const MINUTES = 60 * 1000;
 
 const getObjectStoreEntries = async () => {
-  return await new DBWrapper('workbox-background-sync', 3).getAll('requests');
+  return await new DBWrapper('workbox-background-sync').getAll('requests');
 };
 
 const createSyncEventStub = (tag) => {
@@ -42,21 +41,20 @@ const createSyncEventStub = (tag) => {
   return ret;
 };
 
-// TODO(philipwalton): uncomment once we move away from the IDB mocks.
-// const clearIndexedDBEntries = async () => {
-//   // Open a conection to the database (at whatever version exists) and
-//   // clear out all object stores. This strategy is used because deleting
-//   // databases inside service worker is flaky in FF and Safari.
-//   // TODO(philipwalton): the version is not needed in real browsers, so it
-//   // can be removed when we move away from running tests in node.
-//   const db = await new DBWrapper('workbox-background-sync').open();
+const clearIndexedDBEntries = async () => {
+  // Open a conection to the database (at whatever version exists) and
+  // clear out all object stores. This strategy is used because deleting
+  // databases inside service worker is flaky in FF and Safari.
+  // TODO(philipwalton): the version is not needed in real browsers, so it
+  // can be removed when we move away from running tests in node.
+  const db = await new DBWrapper('workbox-background-sync').open();
 
-//   // Edge cannot convert a DOMStringList to an array via `[...list]`.
-//   for (const store of Array.from(db.db.objectStoreNames)) {
-//     await db.clear(store);
-//   }
-//   await db.close();
-// };
+  // Edge cannot convert a DOMStringList to an array via `[...list]`.
+  for (const store of Array.from(db.db.objectStoreNames)) {
+    await db.clear(store);
+  }
+  await db.close();
+};
 
 describe(`Queue`, function() {
   const sandbox = sinon.createSandbox();
@@ -64,10 +62,7 @@ describe(`Queue`, function() {
   beforeEach(async function() {
     Queue._queueNames.clear();
 
-    // TODO(philipwalton): remove `iDBReset()` and re-add
-    // `clearIndexedDBEntries()` once we move away from the mocks.
-    // await clearIndexedDBEntries();
-    iDBReset();
+    await clearIndexedDBEntries();
 
     // Don't actually register for a sync event in any test, as it could
     // make the tests non-deterministic.

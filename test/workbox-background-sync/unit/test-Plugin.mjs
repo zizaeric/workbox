@@ -8,10 +8,10 @@
 
 import {expect} from 'chai';
 import sinon from 'sinon';
-import {Queue} from '../../../packages/workbox-background-sync/Queue.mjs';
-import {Plugin} from '../../../packages/workbox-background-sync/Plugin.mjs';
+import {Queue} from 'workbox-background-sync/Queue.mjs';
+import {Plugin} from 'workbox-background-sync/Plugin.mjs';
 
-describe(`[workbox-background-sync] Plugin`, function() {
+describe(`Plugin`, function() {
   const sandbox = sinon.createSandbox();
 
   beforeEach(async function() {

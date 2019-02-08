@@ -7,11 +7,11 @@
 */
 
 import {expect} from 'chai';
-import {StorableRequest} from '../../../../packages/workbox-background-sync/lib/StorableRequest.mjs';
+import {StorableRequest} from 'workbox-background-sync/lib/StorableRequest.mjs';
 import expectError from '../../../../infra/testing/expectError';
 
 
-describe(`[workbox-background-sync] StorableRequest`, function() {
+describe(`StorableRequest`, function() {
   describe(`static fromRequest`, function() {
     it(`should convert a Request to a StorableRequest instance`, async function() {
       const request = new Request('/foo', {
