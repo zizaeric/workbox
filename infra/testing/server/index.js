@@ -8,6 +8,7 @@
 
 const bodyParser = require('body-parser');
 const express = require('express');
+const bareModulesMiddleware = require('express-transform-bare-module-specifiers').default;
 const nunjucks = require('nunjucks');
 const path = require('path');
 const requireDir = require('require-dir');
@@ -24,6 +25,8 @@ let server;
 
 function initApp() {
   app = express();
+
+  app.use('*.mjs', bareModulesMiddleware());
 
   // Configure nunjucks to work with express routes.
   nunjucks.configure(path.join(__dirname, 'templates'), {express: app});

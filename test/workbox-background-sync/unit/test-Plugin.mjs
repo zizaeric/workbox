@@ -6,26 +6,26 @@
   https://opensource.org/licenses/MIT.
 */
 
-import {expect} from 'chai';
-import {reset as iDBReset} from 'shelving-mock-indexeddb';
-import sinon from 'sinon';
 import {Queue} from '../../../packages/workbox-background-sync/Queue.mjs';
 import {Plugin} from '../../../packages/workbox-background-sync/Plugin.mjs';
 
-describe(`[workbox-background-sync] Plugin`, function() {
+
+// Stub the SyncManager interface on registration.
+self.registration = {
+  sync: {
+    register: () => Promise.resolve(),
+  },
+};
+
+
+describe(`Plugin`, function() {
   const sandbox = sinon.createSandbox();
 
   const reset = () => {
-    sandbox.restore();
     Queue._queueNames.clear();
-    iDBReset();
   };
 
   beforeEach(async function() {
-    reset();
-  });
-
-  after(async function() {
     reset();
   });
 
@@ -41,7 +41,7 @@ describe(`[workbox-background-sync] Plugin`, function() {
 
       queuePlugin.fetchDidFail({request: new Request('/one')});
       expect(stub.callCount).to.equal(1);
-      expect(stub.args[0][0].request.url).to.equal('/one');
+      expect(stub.args[0][0].request.url).to.equal(`${location.origin}/one`);
       expect(stub.args[0][0].request).to.be.instanceOf(Request);
     });
   });
