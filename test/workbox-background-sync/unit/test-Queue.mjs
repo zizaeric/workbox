@@ -6,19 +6,43 @@
   https://opensource.org/licenses/MIT.
 */
 
-import {expect} from 'chai';
-import sinon from 'sinon';
 import {Queue} from 'workbox-background-sync/Queue.mjs';
 import {QueueStore} from 'workbox-background-sync/lib/QueueStore.mjs';
 import {DBWrapper} from 'workbox-core/_private/DBWrapper.mjs';
-import expectError from '../../../infra/testing/expectError';
+import {deleteDatabase} from 'workbox-core/_private/deleteDatabase.mjs';
 
 
 const MINUTES = 60 * 1000;
 
 const getObjectStoreEntries = async () => {
-  return await new DBWrapper('workbox-background-sync').getAll('requests');
+  return await new DBWrapper('workbox-background-sync', 3).getAll('requests');
 };
+
+// Stub the SyncManager interface on registration.
+self.registration = {
+  sync: {
+    register: () => Promise.resolve(),
+  },
+};
+
+// Stub SyncEvent
+// https://wicg.github.io/BackgroundSync/spec/#sync-event
+class SyncEvent extends Event {
+  constructor(type, init = {}) {
+    super(type, init);
+
+    if (!init.tag) {
+      throw new TypeError(
+          `Failed to construct 'SyncEvent': required member tag is undefined.`);
+    }
+
+    this.tag = init.tag;
+    this.lastChance = init.lastChance || false;
+  }
+  waitUntil() {
+    // Do nothing...
+  }
+}
 
 const createSyncEventStub = (tag) => {
   const ret = {

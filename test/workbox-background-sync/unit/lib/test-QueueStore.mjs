@@ -6,12 +6,10 @@
   https://opensource.org/licenses/MIT.
 */
 
-import {expect} from 'chai';
 import {DBWrapper} from 'workbox-core/_private/DBWrapper.mjs';
 import {deleteDatabase} from 'workbox-core/_private/deleteDatabase.mjs';
 import {QueueStore} from 'workbox-background-sync/lib/QueueStore.mjs';
 import {StorableRequest} from 'workbox-background-sync/lib/StorableRequest.mjs';
-import expectError from '../../../../infra/testing/expectError';
 
 
 const getObjectStoreEntries = async () => {
@@ -28,9 +26,7 @@ describe(`QueueStore`, function() {
       const queueStore = new QueueStore('foo');
       expect(queueStore._queueName).to.equal('foo');
     });
-  });
 
-  describe(`_upgradeDb`, function() {
     it(`should handle upgrading from no previous version`, async function() {
       const queueStore = new QueueStore('a');
 
