@@ -6,12 +6,15 @@
   https://opensource.org/licenses/MIT.
 */
 
+const path = require('path');
 const templateData = require('../template-data');
 
 
-// Matches any URL ending in `.njk` and renders the file at the full path
-// as a nunjucks template.
-const match = /(\.[a-z]+)\.njk$/;
+// Matches any URL ending in `common.njk` and renders the file in the
+// `../templates/*` directory as the response.
+// NOTE: this allow you to serve a template file with any directory path,
+// which is useful when dealing with service worker scope.
+const match = /(\.[a-z]+)\.common.njk$/;
 
 async function handler(req, res) {
   const ext = req.params[0];
@@ -26,7 +29,9 @@ async function handler(req, res) {
       break;
   }
 
-  res.render(req.path.slice(1), templateData.get());
+  const basename = path.basename(req.path).replace('.common', '');
+  const file = path.join(__dirname, '..', 'templates', basename);
+  res.render(file, templateData.get());
 }
 
 module.exports = {
