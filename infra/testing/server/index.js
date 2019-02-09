@@ -29,7 +29,7 @@ function initApp() {
   app.use('*.mjs', bareModulesMiddleware());
 
   // Configure nunjucks to work with express routes.
-  nunjucks.configure(path.join(__dirname, 'templates'), {express: app});
+  nunjucks.configure('./', {express: app});
 
   // Exposed the `.body` property on requests for application/json.
   app.use(bodyParser.json());
@@ -50,8 +50,7 @@ function initApp() {
   const staticDir = path.resolve(__dirname, '..', '..', '..');
   app.use(
       express.static(staticDir),
-      serveIndex(staticDir, {'icons': true})
-  );
+      serveIndex(staticDir, {'icons': true}));
 }
 
 function start() {
