@@ -16,7 +16,8 @@ const match = '/__WORKBOX/buildFile/:packageFile';
 
 async function handler(req, res) {
   const {packageFile} = req.params;
-  const [outputFilename, buildType, extension] = packageFile.split('.', 3);
+  const [, outputFilename, buildType, extension, map] =
+      /([a-z-]+)\.?(dev|prod)?(\.m?js)?(\.map)?$/.exec(packageFile);
 
   const pkg = outputFilenameToPkgMap[outputFilename];
   const packagePath = path.join(ROOT_DIR, 'packages', pkg.name);
@@ -31,7 +32,11 @@ async function handler(req, res) {
   }
 
   if (extension) {
-    fileName = fileName.replace(/\.m?js$/, `.${extension}`);
+    fileName = fileName.replace(/\.m?js$/, extension);
+  }
+
+  if (map) {
+    fileName += map;
   }
 
   const filePath = path.resolve(__dirname, buildPath, fileName);

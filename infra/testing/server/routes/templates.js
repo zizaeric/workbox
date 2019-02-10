@@ -16,6 +16,11 @@ const match = /(\.[a-z]+)\.njk$/;
 async function handler(req, res) {
   const ext = req.params[0];
 
+  // Since templates can change between tests without the URL changing,
+  // we need to make sure the browser doesn't cache the response.
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.set('Expires', '0');
+
   switch (ext) {
     case '.js':
     case '.mjs':

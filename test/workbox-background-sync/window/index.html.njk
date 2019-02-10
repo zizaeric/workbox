@@ -1,8 +1,6 @@
-{% extends 'infra/testing/server/templates/unit-tests.html.njk' %}
+{% extends 'infra/testing/server/templates/test-window.html.njk' %}
 
 {% block tests %}
   <script type="module" src="lib/test-QueueStore.mjs"></script>
   <script type="module" src="lib/test-StorableRequest.mjs"></script>
-  <script type="module" src="test-Plugin.mjs"></script>
-  <script type="module" src="test-Queue.mjs"></script>
 {% endblock %}

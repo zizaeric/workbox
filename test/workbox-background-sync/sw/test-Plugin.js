@@ -6,38 +6,26 @@
   https://opensource.org/licenses/MIT.
 */
 
-import {Queue} from '../../../packages/workbox-background-sync/Queue.mjs';
-import {Plugin} from '../../../packages/workbox-background-sync/Plugin.mjs';
-
-
-// Stub the SyncManager interface on registration.
-self.registration = {
-  sync: {
-    register: () => Promise.resolve(),
-  },
-};
-
-
 describe(`Plugin`, function() {
+  const {Plugin, Queue} = workbox.backgroundSync;
   const sandbox = sinon.createSandbox();
 
-  const reset = () => {
-    Queue._queueNames.clear();
-  };
-
   beforeEach(async function() {
-    reset();
+    // Don't actually register for a sync event in any test, as it could
+    // make the tests non-deterministic.
+    if ('sync' in registration) {
+      sandbox.stub(registration.sync, 'register');
+    }
+  });
+
+  afterEach(function() {
+    sandbox.restore();
   });
 
   describe(`constructor`, function() {
-    it(`should store a Queue instance`, async function() {
-      const queuePlugin = new Plugin('foo');
-      expect(queuePlugin._queue).to.be.instanceOf(Queue);
-    });
-
     it(`should implement fetchDidFail and add requests to the queue`, async function() {
       const stub = sandbox.stub(Queue.prototype, 'pushRequest');
-      const queuePlugin = new Plugin('foo');
+      const queuePlugin = new Plugin('a');
 
       queuePlugin.fetchDidFail({request: new Request('/one')});
       expect(stub.callCount).to.equal(1);
