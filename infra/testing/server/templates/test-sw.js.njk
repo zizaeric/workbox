@@ -1,0 +1,93 @@
+importScripts(
+    '/node_modules/mocha/mocha.js',
+    '/node_modules/chai/chai.js',
+    '/node_modules/sinon/pkg/sinon-no-sourcemaps.js'
+);
+
+// A promise that resolves once the tests finish successfully or reject
+// when they error.
+let testsComplete;
+
+Promise.resolve().then(() => {
+  testsComplete = new Promise((resolve, reject) => {
+    const failedTests = [];
+    const runner = mocha.run();
+
+    runner.on('fail', (test, err) => {
+      const flattenTitles = (test) => {
+        const titles = [test.title];
+        while (test.parent.title) {
+          titles.push(test.parent.title);
+          test = test.parent;
+        }
+        return titles.reverse().join(' ');
+      };
+
+      failedTests.push({
+        name: flattenTitles(test),
+        result: false,
+        message: err.message,
+        stack: err.stack,
+      });
+    });
+
+    runner.on('end', async (...args) => {
+      console.log(`${runner.failures} out of ${runner.total} failures.`);
+
+      if (runner.failures) {
+        reject(failedTests);
+      } else {
+        resolve();
+      }
+    });
+  });
+});
+
+addEventListener('install', (event) => {
+  skipWaiting();
+  event.waitUntil(testsComplete);
+});
+
+self.expect = chai.expect;
+
+self.expectError = async (func, errorName, finalCb) => {
+  let caughtError = null;
+  try {
+    const result = func();
+    if (result && result instanceof Promise) {
+      await result;
+    }
+  } catch (err) {
+    caughtError = err;
+  }
+
+  if (!caughtError) {
+    throw new Error('Expected error to be thrown but function ran correctly.');
+  }
+
+  if (caughtError.constructor.name !== 'WorkboxError') {
+    console.warn(`Unexpected error thrown.`, caughtError);
+  }
+
+  expect(caughtError.constructor.name).to.equal('WorkboxError');
+  expect(caughtError.name).to.equal(errorName);
+
+  if (finalCb) {
+    return finalCb(caughtError);
+  }
+};
+
+mocha.setup({
+  ui: 'bdd',
+  timeout: 5000,
+  reporter: null,
+});
+
+importScripts('/__WORKBOX/buildFile/workbox-sw');
+workbox.setConfig({modulePathPrefix: '/__WORKBOX/buildFile/'});
+
+// Stub logger methods to avoid noise in the console. If a test needs to
+// un-stub one of these, it should do it within each test.
+sinon.stub(workbox.core._private.logger);
+
+{% block tests %}{% endblock %}

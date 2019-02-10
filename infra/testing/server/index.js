@@ -26,10 +26,10 @@ let server;
 function initApp() {
   app = express();
 
-  app.use('*.mjs', bareModulesMiddleware());
-
   // Configure nunjucks to work with express routes.
-  nunjucks.configure('./', {express: app});
+  nunjucks.configure('./', {express: app, noCache: true});
+
+  app.use('*.mjs', bareModulesMiddleware());
 
   // Exposed the `.body` property on requests for application/json.
   app.use(bodyParser.json());

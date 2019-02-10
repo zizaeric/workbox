@@ -1,0 +1,6 @@
+{% extends 'infra/testing/server/templates/test-sw.js.njk' %}
+
+{% block tests %}
+  importScripts('test-Plugin.js');
+  importScripts('test-Queue.js');
+{% endblock %}

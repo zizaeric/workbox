@@ -6,12 +6,8 @@
   https://opensource.org/licenses/MIT.
 */
 
-import {expect} from 'chai';
-import sinon from 'sinon';
-import {Queue} from 'workbox-background-sync/Queue.mjs';
-import {Plugin} from 'workbox-background-sync/Plugin.mjs';
-
 describe(`Plugin`, function() {
+  const {Plugin, Queue} = workbox.backgroundSync;
   const sandbox = sinon.createSandbox();
 
   beforeEach(async function() {
