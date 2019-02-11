@@ -10,7 +10,7 @@ let testsComplete;
 
 Promise.resolve().then(() => {
   testsComplete = new Promise((resolve, reject) => {
-    const failedTests = [];
+    const reports = [];
     const runner = mocha.run();
 
     runner.on('fail', (test, err) => {
@@ -23,7 +23,7 @@ Promise.resolve().then(() => {
         return titles.reverse().join(' ');
       };
 
-      failedTests.push({
+      reports.push({
         name: flattenTitles(test),
         result: false,
         message: err.message,
@@ -32,20 +32,31 @@ Promise.resolve().then(() => {
     });
 
     runner.on('end', async (...args) => {
-      console.log(`${runner.failures} out of ${runner.total} failures.`);
+      const mochaResults = runner.stats;
+      mochaResults.reports = reports;
 
-      if (runner.failures) {
-        reject(failedTests);
-      } else {
-        resolve();
-      }
+      resolve(mochaResults);
     });
   });
 });
 
 addEventListener('install', (event) => {
   skipWaiting();
-  event.waitUntil(testsComplete);
+
+  const doneInstalling = async () => {
+    const results = await testsComplete;
+    const windows = await clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true,
+    });
+    for (const win of windows) {
+      win.postMessage({
+        type: 'WINDOW_TEST_RESULTS',
+        payload: results,
+      });
+    }
+  };
+  event.waitUntil(doneInstalling());
 });
 
 self.expect = chai.expect;

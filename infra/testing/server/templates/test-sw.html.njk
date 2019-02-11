@@ -22,14 +22,12 @@
     // // Randomize the test URL so every test run forces a new SW install.
     const wb = new Workbox('./index.js.njk?v=' + Math.random());
 
-    wb.register().catch((err) => console.error(err));
+    wb.register();
 
-    wb.addEventListener('installed', () => {
-      console.log('installed');
-    });
-
-    wb.addEventListener('redundant', () => {
-      console.log('redundant');
+    wb.addEventListener('message', (event) => {
+      if (event.data.type === 'WINDOW_TEST_RESULTS') {
+        window.mochaResults = event.data.payload;
+      }
     });
   </script>
 </body>

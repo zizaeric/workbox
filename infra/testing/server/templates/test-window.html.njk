@@ -59,12 +59,7 @@
   <script>
   addEventListener('load', () => {
     const runner = mocha.run();
-    const failedTests = [];
-
-    runner.on('end', () => {
-      window.mochaResults = runner.stats;
-      window.mochaResults.reports = failedTests;
-    });
+    const reports = [];
 
     runner.on('fail', (test, err) => {
       console.error(err.stack);
@@ -78,12 +73,17 @@
         return titles.reverse().join(' ');
       };
 
-      failedTests.push({
+      reports.push({
         name: flattenTitles(test),
         result: false,
         message: err.message,
         stack: err.stack,
       });
+    });
+
+    runner.on('end', () => {
+      window.mochaResults = runner.stats;
+      window.mochaResults.reports = reports;
     });
   }, {once: true});
   </script>
