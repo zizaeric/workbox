@@ -6,7 +6,7 @@
   https://opensource.org/licenses/MIT.
 */
 
-import {Workbox} from '/__WORKBOX/buildFile/workbox-window';
+import {Workbox} from 'workbox-window/Workbox.mjs';
 
 
 const isDev = () => {
@@ -61,22 +61,6 @@ const updateVersion = async (version, scriptURL) => {
     headers: {'content-type': 'application/json'},
     body: JSON.stringify({version}),
   });
-
-  // If a script URL is passed, wait until a request for that script returns
-  // the newly set version.
-  let tries = 0;
-  if (scriptURL) {
-    while (++tries < 10) {
-      const resp = await fetch(scriptURL);
-      const text = await resp.text();
-      if (text.indexOf(version) > -1) {
-        return;
-      } else {
-        await sleep(100);
-      }
-    }
-  }
-  throw new Error('No updated version found after 10 retries');
 };
 
 const assertMatchesWorkboxEvent = (event, props) => {
