@@ -7,7 +7,9 @@
 */
 
 const {generateSWString} = require('workbox-build');
+const {ConcatSource} = require('webpack-sources');
 const path = require('path');
+const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin');
 
 const convertStringToAsset = require('./lib/convert-string-to-asset');
 const getDefaultConfig = require('./lib/get-default-config');
@@ -48,38 +50,47 @@ class GenerateSW {
   }
 
   /**
-   * @param {Object} compilation The webpack compilation.
-   * @private
-   */
-  async handleEmit(compilation) {
-    try {
-      const childCompiler = compilation.createChildCompiler(
-          this.constructor.name,
-          {},
-          []
-      );
-      console.log('handle');
-      compilation.hooks.childCompiler.tap(
-          this.constructor.name,
-          (childCompiler, compilerName, compilerIndex) => {
-            console.log(childCompiler, compilerName, compilerIndex);
-          }
-      );
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  /**
-   * @param {Object} [compiler] default compiler object passed from webpack
+   * @param {Object} [parentCompiler] default compiler object passed from webpack
    *
    * @private
    */
-  apply(compiler) {
-    compiler.hooks.make.tapPromise(
-        this.constructor.name,
-        (compilation) => this.handleEmit(compilation)
-    );
+  apply(parentCompiler) {
+    const pluginName = this.constructor.name;
+
+    parentCompiler.hooks.make.tapAsync(pluginName, (compilation, callback) => {
+      const outputOptions = {
+        path: parentCompiler.options.output.path,
+        filename: this.config.swDest,
+      };
+
+      const childCompiler = compilation.createChildCompiler(
+          pluginName, outputOptions);
+      childCompiler.context = parentCompiler.context;
+      childCompiler.inputFileSystem = parentCompiler.inputFileSystem;
+
+      new SingleEntryPlugin(
+          parentCompiler.context,
+          path.resolve(__dirname, 'sw-template.js'),
+          'Workbox service worker',
+      ).apply(childCompiler);
+
+      childCompiler.runAsChild((error, entries, childCompilation) => {
+        callback(error);
+      });
+    });
+
+    parentCompiler.hooks.emit.tapAsync(pluginName, (compilation, callback) => {
+      const swAsset = compilation.assets[this.config.swDest];
+      delete compilation.assets[this.config.swDest];
+
+      const manifestEntries = getManifestEntriesFromCompilation(
+          compilation, this.config);
+
+      compilation.assets[this.config.swDest] = new ConcatSource(
+          stringifyManifest(manifestEntries), swAsset);
+
+      callback();
+    });
   }
 }
 
