@@ -6,7 +6,10 @@
   https://opensource.org/licenses/MIT.
 */
 
-const joi = require('@hapi/joi');
+import '../_version.mjs';
 
-module.exports = joi.object().type(RegExp)
-    .error(() => 'the value must be a RegExp');
+
+// Callbacks to be executed whenever there's a quota error.
+const quotaErrorCallbacks = new Set();
+
+export {quotaErrorCallbacks};
