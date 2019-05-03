@@ -6,8 +6,9 @@
   https://opensource.org/licenses/MIT.
 */
 
-const {generateSWString} = require('workbox-build');
 const {ConcatSource} = require('webpack-sources');
+const {generateSWString} = require('workbox-build');
+const {promisify} = require('util');
 const path = require('path');
 const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin');
 
@@ -57,7 +58,7 @@ class GenerateSW {
   apply(parentCompiler) {
     const pluginName = this.constructor.name;
 
-    parentCompiler.hooks.make.tapAsync(pluginName, (compilation, callback) => {
+    parentCompiler.hooks.make.tapAsync(pluginName, async (compilation, cb) => {
       const outputOptions = {
         path: parentCompiler.options.output.path,
         filename: this.config.swDest,
@@ -65,21 +66,53 @@ class GenerateSW {
 
       const childCompiler = compilation.createChildCompiler(
           pluginName, outputOptions);
+
       childCompiler.context = parentCompiler.context;
       childCompiler.inputFileSystem = parentCompiler.inputFileSystem;
+      childCompiler.outputFileSystem = parentCompiler.outputFileSystem;
+
+      childCompiler.resolverFactory.hooks.resolveOptions.tap(
+          'normal', pluginName, (options) => {
+            options.modules = [
+              path.resolve(__dirname, '..', 'node_modules', 'workbox-build',
+                  'node_modules'),
+              'node_modules',
+            ];
+          }
+      );
+
+      const {swString, warnings} = await generateSWString(
+          sanitizeConfig.forGenerateSWString(this.config));
+
+      const mkdirp = promisify(childCompiler.outputFileSystem.mkdirp);
+      const writeFile = promisify(childCompiler.outputFileSystem.writeFile);
+
+      const fullPath = childCompiler.outputFileSystem.join(outputOptions.path,
+          outputOptions.filename);
+      await mkdirp(outputOptions.path);
+      await writeFile(fullPath, swString);
 
       new SingleEntryPlugin(
-          parentCompiler.context,
-          path.resolve(__dirname, 'sw-template.js'),
+          outputOptions.path,
+          './' + outputOptions.filename,
           'Workbox service worker',
       ).apply(childCompiler);
 
       childCompiler.runAsChild((error, entries, childCompilation) => {
-        callback(error);
+        if (error) {
+          return cb(error);
+        }
+
+        compilation.warnings = compilation.warnings.concat(
+            childCompilation.warnings).concat(warnings);
+        compilation.errors = compilation.errors.concat(
+            childCompilation.errors);
+
+        cb();
       });
     });
 
-    parentCompiler.hooks.emit.tapAsync(pluginName, (compilation, callback) => {
+    parentCompiler.hooks.emit.tapAsync(pluginName, (compilation, cb) => {
       const swAsset = compilation.assets[this.config.swDest];
       delete compilation.assets[this.config.swDest];
 
@@ -89,7 +122,7 @@ class GenerateSW {
       compilation.assets[this.config.swDest] = new ConcatSource(
           stringifyManifest(manifestEntries), swAsset);
 
-      callback();
+      cb();
     });
   }
 }
